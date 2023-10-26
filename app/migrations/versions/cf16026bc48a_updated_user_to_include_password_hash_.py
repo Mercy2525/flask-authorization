@@ -1,8 +1,8 @@
-"""updated user name to be unique
+"""updated user to include password hash and bcrypt
 
-Revision ID: 2ffd4cfb8f4d
+Revision ID: cf16026bc48a
 Revises: 
-Create Date: 2023-10-26 11:10:35.827975
+Create Date: 2023-10-26 11:59:09.797620
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '2ffd4cfb8f4d'
+revision = 'cf16026bc48a'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,6 +21,7 @@ def upgrade():
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
+    sa.Column('_password_hash', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
     )

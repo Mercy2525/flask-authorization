@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 import os
-from flask import Flask, make_response, jsonify, request
+from flask import Flask, make_response, jsonify, request,session
 from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
-from models import db, User, House
+from models import db, User
 from flask_cors import CORS
 from flask_restful import Api, Resource
 from werkzeug.exceptions import NotFound
+from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
-
+bcrypt=Bcrypt(app)
 # development
+app.secret_key='Benjie$'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR']= True
@@ -32,18 +33,56 @@ class Index(Resource):
 
 class Signup(Resource):
     def post(self):
-        name = request.get_json().get('name')
-        password = request.get_json().get('password')
+        name=request.get_json().get('name')
+        password=request.get_json().get('name')
 
         if name and password:
-            new_user = User(name=name)
-            new_user.password_hash = password
+            new_user=User(name=name)
+            new_user.password_hash=password
 
             db.session.add(new_user)
             db.session.commit()
 
+            #create a cookie using session,name it as user_id
             session['user_id']=new_user.id
-            return new_user.to_dict(),201
+
+            return new_user.to_dict(), 201
+        
+        return {"error": "user details must be added"},401
+    
+
+api.add_resource(Signup,'/signup', endpoint='signup')
+
+class CheckSession(Resource):
+    def get(self):
+        if session.get('user_id'):
+            user=user.query.filter(user.id==session['user_id'])
+            return user.to_dict(), 200
+        
+        return {"error": "Resource not found"}
+api.add_resource(CheckSession, '/checksession', endpoint='/checksession')
+
+class Logout(Resource):
+    def delete(self):
+        if session.get('user_id'):
+            session['user_id']=None
+            return {"success": " you have been logged out successfully"}
+        else:
+            return {"error": "you have no account, login(create a session)"}
+
+class Login(Resource):
+    def post(self):
+        name = request.form.get('name')
+        password = request.form.get('password')
+        user = User.query.filter(User.name==name).first()
+        if user and user.authenticate(password):
+            session['user_id']=user.id
+            return user.to_dict(),200
+        else:
+            return {'error':'username or password incorrect'},
+
+api.add_resource(Login, '/login', endpoint = 'login')
+        
 
 class Users(Resource):
     def get(self):
